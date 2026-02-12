@@ -12,6 +12,8 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   List<Contact> contacts = [];
+  Set<int> selectedContacts = {};
+  bool selectionMode = false;
 
   Future<void> loadContacts() async {
     final contacts = await ContactRepository.getContacts();
@@ -43,15 +45,55 @@ class _ContactPageState extends State<ContactPage> {
     }
   }
 
-  void _deleteContact(int id) async {
+  /* void _deleteContact(int id) async {
     await ContactRepository.deleteContact(id);
+    await loadContacts();
+  }
+
+  void _toggleSelection(Contact contact) {
+    setState(() {
+      selectionMode = true;
+      selectedContacts.add(contact.id!);
+    });
+  } */
+
+  void _exitSelectionMode() {
+    setState(() {
+      selectionMode = false;
+      selectedContacts.clear();
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    for (final id in selectedContacts) {
+      await ContactRepository.deleteContact(id);
+    }
+    _exitSelectionMode();
     await loadContacts();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Contacts')),
+      appBar: AppBar(
+        title: Text(
+          selectionMode
+              ? '${selectedContacts.length} seleccionados'
+              : 'Contacts',
+        ),
+        actions: selectionMode
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: _exitSelectionMode,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: _deleteSelected,
+                ),
+              ]
+            : null,
+      ),
       body: Container(
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(
@@ -65,31 +107,75 @@ class _ContactPageState extends State<ContactPage> {
           itemCount: contacts.length,
           itemBuilder: (context, index) {
             final contact = contacts[index];
-            return Card(
-              elevation: 4,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.blueAccent,
-                  child: Text(
-                    contact.name[0],
-                    style: const TextStyle(color: Colors.white),
+            final isSelected = selectedContacts.contains(contact.id);
+
+            return Row(
+              children: [
+                if (selectionMode)
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: (_) {
+                      setState(() {
+                        if (isSelected) {
+                          selectedContacts.remove(contact.id);
+                          if (selectedContacts.isEmpty) {
+                            selectionMode = false;
+                          }
+                        } else {
+                          selectedContacts.add(contact.id!);
+                        }
+                      });
+                    },
                   ),
-                ), // Avatar con primera inicial del nombre
-                title: Text(
-                  contact.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+
+                Expanded(
+                  child: Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.blueAccent,
+                        child: Text(
+                          contact.name[0],
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      title: Text(
+                        contact.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(contact.email),
+
+                      onLongPress: () {
+                        setState(() {
+                          selectionMode = true;
+                          selectedContacts.add(contact.id!);
+                        });
+                      },
+
+                      onTap: () {
+                        if (selectionMode) {
+                          setState(() {
+                            if (isSelected) {
+                              selectedContacts.remove(contact.id);
+                              if (selectedContacts.isEmpty) {
+                                selectionMode = false;
+                              }
+                            } else {
+                              selectedContacts.add(contact.id!);
+                            }
+                          });
+                        } else {
+                          _showContactFormDialog(contact: contact);
+                        }
+                      },
+                    ),
+                  ),
                 ),
-                subtitle: Text(contact.email),
-                onTap: () => _showContactFormDialog(contact: contact),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
-                  onPressed: () => _deleteContact(contact.id!),
-                ),
-              ),
+              ],
             );
           },
         ),
