@@ -48,14 +48,14 @@ class _ContactPageState extends State<ContactPage> {
   /* void _deleteContact(int id) async {
     await ContactRepository.deleteContact(id);
     await loadContacts();
-  }
+  } */
 
   void _toggleSelection(Contact contact) {
     setState(() {
       selectionMode = true;
       selectedContacts.add(contact.id!);
     });
-  } */
+  }
 
   void _exitSelectionMode() {
     setState(() {
@@ -95,7 +95,7 @@ class _ContactPageState extends State<ContactPage> {
             : null,
       ),
       body: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.lightBlueAccent, Colors.blueAccent],
@@ -109,73 +109,55 @@ class _ContactPageState extends State<ContactPage> {
             final contact = contacts[index];
             final isSelected = selectedContacts.contains(contact.id);
 
-            return Row(
-              children: [
-                if (selectionMode)
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: (_) {
-                      setState(() {
-                        if (isSelected) {
-                          selectedContacts.remove(contact.id);
-                          if (selectedContacts.isEmpty) {
-                            selectionMode = false;
-                          }
-                        } else {
-                          selectedContacts.add(contact.id!);
-                        }
-                      });
-                    },
+            return GestureDetector(
+              onLongPress: () => _toggleSelection(contact),
+              onTap: () {
+                if (selectionMode) {
+                  setState(() {
+                    if (isSelected) {
+                      selectedContacts.remove(contact.id);
+                      if (selectedContacts.isEmpty) selectionMode = false;
+                    } else {
+                      selectedContacts.add(contact.id!);
+                    }
+                  });
+                } else {
+                  _showContactFormDialog(contact: contact);
+                }
+              },
+              child: Container(
+                width: double.infinity, // ocupa todo el ancho de la lista
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                margin: const EdgeInsets.symmetric(vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.red.withAlpha((0.2 * 255).toInt())
+                      : null,
+                ), // padding individual
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-
-                Expanded(
-                  child: Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.blueAccent,
-                        child: Text(
-                          contact.name[0],
-                          style: const TextStyle(color: Colors.white),
-                        ),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blueAccent,
+                      child: Text(
+                        contact.name[0],
+                        style: const TextStyle(color: Colors.white),
                       ),
-                      title: Text(
-                        contact.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(contact.email),
-
-                      onLongPress: () {
-                        setState(() {
-                          selectionMode = true;
-                          selectedContacts.add(contact.id!);
-                        });
-                      },
-
-                      onTap: () {
-                        if (selectionMode) {
-                          setState(() {
-                            if (isSelected) {
-                              selectedContacts.remove(contact.id);
-                              if (selectedContacts.isEmpty) {
-                                selectionMode = false;
-                              }
-                            } else {
-                              selectedContacts.add(contact.id!);
-                            }
-                          });
-                        } else {
-                          _showContactFormDialog(contact: contact);
-                        }
-                      },
                     ),
+                    title: Text(
+                      contact.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(contact.email),
                   ),
                 ),
-              ],
+              ),
             );
           },
         ),
